@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Дадан шежіресі</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Serif:wght@400;700&family=Noto+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a living tree on black. Root (Дадан) at the bottom, branches grow upward; the lineage is a gold branch. Single dark look by design. */
+:root {
+  --bg: #050505;
+  --surface: #121110;
+  --fg: #ece6d8;
+  --muted: #8f897c;
+  --line: #2a2723;
+  --bark: #6b4a2e;
+  --bark-dark: #3d2a1a;
+  --leaf: #4f8f3f;
+  --gold: #e8b04a;
+  --gold-soft: rgba(232,176,74,.14);
+  --display: "PT Serif", Georgia, "Times New Roman", serif;
+  --body: "Noto Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--body); display: flex; flex-direction: column; }
+header {
+  padding-block: 18px 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 10px;
+  border-bottom: 1px solid var(--line); position: relative; z-index: 2; background: var(--bg);
+}
+.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+h1 { font-family: var(--display); font-size: 1.8rem; margin: 0; color: var(--gold); letter-spacing: .02em; text-wrap: balance; }
+.sub { color: var(--muted); font-size: .85rem; }
+.chain { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.chain button {
+  font: 500 .82rem var(--body); color: var(--gold); background: var(--gold-soft);
+  border: 1px solid rgba(232,176,74,.3); border-radius: 999px; padding: 3px 10px; cursor: pointer;
+}
+.chain button:hover, .chain button:focus-visible { background: var(--gold); color: var(--bg); outline: none; }
+.chain .gen { font-size: .7rem; opacity: .7; margin-right: 4px; font-variant-numeric: tabular-nums; }
+.chain .arr { color: var(--bark); font-size: .8rem; }
+.tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tools button, .tools input {
+  font: .85rem var(--body); color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px;
+}
+.tools button { cursor: pointer; }
+.tools button:hover, .tools button:focus-visible { border-color: var(--gold); outline: none; }
+.tools button.primary { background: var(--gold); color: var(--bg); border-color: var(--gold); font-weight: 600; }
+.tools input { min-width: 0; width: 200px; }
+.tools input::placeholder { color: var(--muted); }
+.tools input:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+#msg { font-size: .8rem; color: var(--muted); }
+main { position: relative; flex: 1; min-height: 440px; overflow: hidden;
+  background: radial-gradient(ellipse 70% 55% at 50% 85%, #14100b 0%, var(--bg) 70%); }
+svg#tree { width: 100%; height: 100%; display: block; cursor: grab; touch-action: none; }
+svg#tree:active { cursor: grabbing; }
+.branch { fill: none; stroke: var(--bark); stroke-linecap: round; }
+.branch.hl { stroke: var(--gold); }
+.node { cursor: pointer; }
+.knot { fill: var(--bark-dark); stroke: var(--bark); stroke-width: 1.5px; }
+.node.closed .knot { fill: var(--leaf); stroke: #7fbf5f; stroke-width: 1.5px; }
+.node.hl .knot { fill: var(--gold); stroke: #ffe2a3; }
+.leaf { stroke: rgba(0,0,0,.35); stroke-width: .6px; }
+.node.hl .leaf { fill: var(--gold) !important; }
+.node text { font: 12px var(--body); fill: var(--fg); paint-order: stroke; stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; }
+.node.hl text { font: 600 15px var(--display); fill: var(--gold); }
+.node text .note { fill: var(--muted); font: 400 10.5px var(--body); }
+.node text .more { fill: #8fcf6f; font: 500 10.5px var(--body); }
+.node.flash .knot { stroke: #fff; stroke-width: 4px; }
+.ground { fill: none; stroke: var(--bark-dark); stroke-linecap: round; }
+.card {
+  position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); bottom: 12px;
+  max-width: min(420px, calc(100% - 24px)); background: rgba(18,17,16,.92);
+  border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px;
+  font-size: .85rem; display: flex; flex-direction: column; gap: 6px; backdrop-filter: blur(4px);
+}
+.card h2 { font-family: var(--display); margin: 0; font-size: 1.2rem; color: var(--fg); }
+.card .path { color: var(--muted); line-height: 1.55; }
+.card .path b { color: var(--gold); font-weight: 600; }
+.card .tag { font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--gold); }
+.legend { position: absolute; right: max(12px, env(safe-area-inset-right, 0px)); top: 10px; font-size: .75rem; color: var(--muted); background: rgba(18,17,16,.9); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 5px; }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.legend svg { width: 16px; height: 16px; flex: none; }
+@media (max-width: 560px) { .legend { display: none; } h1 { font-size: 1.45rem; } .tools input { width: 100%; } }
+</style>
+
+</head>
+<body>
+
+<header>
+  <div class="top">
+    <h1>Дадан шежіресі</h1>
+    <span class="sub">«Даданнан өзіме дейін» кітабы, 37–57 беттер · Дадан → Есен: 13 буын</span>
+  </div>
+  <div class="chain" id="chain" aria-label="Ерекшеленген ата жолы"></div>
+  <div class="tools">
+    <button class="primary" id="btnLine">Ата жолын көрсету</button>
+    <button id="btnExpand">Барлығын ашу</button>
+    <button id="btnFit">Экранға сыйғызу</button>
+    <input id="search" list="names" placeholder="Есімді іздеу…" autocomplete="off">
+    <datalist id="names"></datalist>
+    <span id="msg"></span>
+  </div>
+</header>
+<main>
+  <svg id="tree" aria-label="Шежіре ағашы"></svg>
+  <div class="legend">
+    <span><svg viewBox="0 0 16 16"><path d="M2 14 C6 10 10 6 14 2" stroke="#e8b04a" stroke-width="3" fill="none" stroke-linecap="round"/></svg>Алтын бұтақ: ата жолы</span>
+    <span><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5" fill="#4f8f3f" stroke="#7fbf5f"/></svg>Бүршік: жабық тармақ</span>
+    <span><svg viewBox="0 0 16 16"><path d="M8 15 C12 11 12 5 8 1 C4 5 4 11 8 15Z" fill="#6aa84f"/></svg>Жапырақ: ұрпағы жазылмаған</span>
+  </div>
+  <div class="card" id="card">
+    <span class="tag">Кеңес</span>
+    <div>Бүршікті (жасыл дөңгелек) басыңыз: бұтақ ашылады. Ағашты жылжытып, үлкейтуге болады.</div>
+  </div>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
+const RAW = `
+*Дадан | шын аты Өмір
+  *Алакөз | Құнантай, Ақсақ
+    *Жөбалай
+      Майдамша
+        Төттібай
+          Ескене | бәйбішеден
+            Жарылқап
+              Тоқболат
+                Доненбай
+                  Тазабек
+                    Ырғабай
+                      Әбденбек
+                      Төлеутазы
+                    Қуатбек
+                    Ақылжан
+                      Мақбоз
+                    Көсембек
+                      Айтқали
+                      Ерғали
+                    Әжібек
+                    Қасымбек
+                      Біләл
+                  Иген
+                    Тайлақ
+                      Оркібай
+                        Оразбай
+                        Ерлан
+                    Секербек
+                      Нәрікбай
+                    Төлесбек
+                      Серікбек
+                    Толымбек
+                      Шара
+              Тасболат
+              Қасболат
+              Жанболат
+              Текеболат | Текен
+          Иман | тоқалдан
+            Шыңғысбай
+              Мәмбек
+              Жәнібек
+            Құнтубай
+              Томаға
+              Ыбырахым
+              Әлібек
+            Тінібек
+          Есдәулет
+            Шегенбай
+              Толыбай | бәйбішеден
+                Сыбанбай
+                  Исатай
+                  Исахан
+                  Мұсахан
+                    Бүркіт
+                    Раушан
+                    Сәуле
+                    Қайыржан
+                    Гүлнұр
+                Нәдір
+                  Шұбар-Мұқаш
+                    Қауаш
+                      Сәулебек
+                  Шалтай
+                  Әдеш
+                    Ғаниолла
+                    Зайтүл
+                    Орақ
+                  Көпеш
+                    Күлтай
+                    Шырақ
+                    Құрақ
+                    Баян
+                    Кененбай
+                    Мейрамкүл
+                    Ұзақ
+                    Мағау
+                    Әбдірахман
+                  Қуат
+                  Мөкен
+                Қалыр
+                  Көрбоз
+                  Көкаман
+                  Кенжебек
+                  Бикен
+                Әйімбет
+                  Аққожа
+                  Әшікен
+                  Бапыш
+                  Қасенбек
+                Құрақ
+                  Мұқан
+                  Қаспақ
+                  Ақан
+              Тұмабай | бәйбішеден
+                Тілеш бай | 1874–1907
+                  Омаш
+                  Әшірбек | қобызшы
+                    Шәріпбек
+                    Әбліуақас
+                    Көкей
+                    Ғымыран
+                    Нығыман
+                    Мағрипа | ақын Дәуітәлі Стамбековтің анасы
+                    Айжан
+                    Күлтай
+                  Машүрүпбек
+                    Садуақас | 1937 ж.
+                    Базаралы | ҰОС-да қайтыс болған
+                    Білəл
+                      Рымтай
+                      Ғани
+                      Аллаберген
+                  Төлеңберлі
+                  Рабиға
+                  Тоты
+                Ыбыжан
+                  Нөкербек
+                  Зәкірбек
+                  Төлепбек
+                Ахмет
+                  Кәрігүл
+                  Дәрігүл
+                  Ұзақбай
+              Жұмабай | бәйбішеден
+                Наурызбай
+                  Шәкір
+                  Бәкір
+                  Жаппар
+                Өжікей
+                  Нұркей
+                  Айнаш
+                  Сағат
+                Сары Мұқаш | тұқым жоқ
+              Балға | бәйбішеден
+                Асан
+                  Башар
+                    Мендяқ
+                Шұлғаубай
+                  Сағындық
+                  Бикен
+                Оспан
+                  Әмірқасым
+                    Панар
+                    Қамар
+                    Майра
+                    Қажымұқан
+                  Аманбек
+                    Асылхан
+                    Төлеухан
+                    Мағира
+                Бейсенбай
+                  Баяты
+                  Құрманай
+                Байтұлақ
+                  Разақ
+                  Рахымберлі
+                    Есімхан
+                    Амантай
+                    Мұхтар
+                    Собит
+                Көпей
+              Қонысбай | бәйбішеден
+                Қыбан
+                  Төлеу
+                Смақ
+                  Әкітай
+                  Кәкітай
+                  Жәкітай
+                  Бикен
+                Туғанбай
+                Өскенбай
+                Несіпбай
+              Қоғабай | бәйбішеден
+                Сыздық
+                  Ноғайбек | 1906–85
+                  Алтынбек | 1907–43
+                  Құндызбек | 1910–42
+                  Қабланбек | 1908–78
+                  Сламбек | 1912–41
+                Ыбырай
+                  Ермұқан | соғыста өлді
+                  Оңақбай
+                Түсіп бақсы
+                Жүкіжан | Тұрсынбек
+                  Манат | 1902–1955
+                    Кәукіш
+                    Дариға
+                    Үміт
+                    Тиыштық
+                    Нұрлан
+                    Қобылан
+                    Жұмабала
+                  Ақмұқан
+                  Әбілдә
+                  Мәкен
+                  Рысжан
+                  Бақтыбек | 1906–1978
+                    Тілеукен
+                    Рымкен
+                    Нұрмағанбет
+                    Дінмағанбет
+                    Қанағат
+                    Ғалия
+                    Нүркен
+                    Асқар
+                  Тәжен балуан | 25 жасында қайтыс болған
+                  Кенжеқара
+                    Майдан
+                    Гүлбағира
+                    Серғазы
+                    Гүлнар
+                    Ардақ
+                    Бүркітбай
+              Ырсымбет | тоқалдан
+                Махат
+                  Қабай
+                  Сембай
+                  Сәрсенбай
+                  Дүйсенбек
+              Барақ | тоқалдан, Бек
+                Шоң
+                  Қабай
+                Исабек
+                  Толғанай
+                  Қасымбек
+                  Башанақ
+                Мұсабек
+                  Есжан
+                  Шәкен
+                  Қара-Мұқаш
+        Сатыпалды | Бердалы
+          Көмек
+            Байболған
+              Ахмеди
+            Божбен
+              Аманбек
+                Бегімбай
+                  Төреқұлбай
+                  Серікбай
+                Ақайша
+                Қолеткен
+              Рахымбек
+                Мұбарак
+                Мейрамбек
+              Жүнісбек
+                Темірбек
+            Дүйсенбек
+              Көрібек
+                Тоты
+                Үміт
+                Аманбала
+                Ерубай
+                  Бауыржан
+                  Жайық
+                Төлеутай
+                  Дәурен
+                  Сексен
+                  Тілеукен
+                  Болат
+                  Мейрамкүл
+                  Нестай
+              Серік
+                Шолпан
+            Қарынбай
+            Малыбай
+              Зәкірбай
+                Бәкір
+                  Сейтқазы
+                  Біржан
+                  Өмірхан
+                Өмірбай
+              Сыздықбай
+                Қитарбек
+                Жұмабек
+                Кенжетай
+                Төлеутай
+                Қаукер
+              Қауғабай
+                Елізбай
+                  Мақтым
+                  Морпиш
+            Сеңкібай
+              Қабыз
+                Төкен
+              Омар
+              Рысалды
+              Рысжан
+              Рысбике
+            Қанапия
+            Жұман
+            Көшенбай
+      *Қылыш
+        *Шот
+          *Қожантай
+            *Бұғытай
+              Тілеген
+                Танай
+                  Байболсын
+                    Смайыл
+                      Ыбырай
+                      Дайыр
+                      Сүлеймен
+                        Шағалам
+                          Сайлау
+                          Зейнекүл
+                          Бибігүл
+                          Нұрлан
+                            Еркебұлан
+                            Ерболат
+                            Медет
+                            Арайлым
+                            Олжас
+                          Ұлан
+                            Бекзат
+                            Дайыр
+                        Сағатай
+                        Тауық
+                    Слан
+                      Әбеу
+                      Әдеу
+                        Сембек
+                        Әбілхан
+                          Төлеуқұл | Шөкім
+                            Гүлнара
+                            Мейірлан
+                            Нариман
+                          Сәндігүл | Бакен
+                          Тілеуқұл | Төкім
+                            Ерлан
+                            Ержан
+                          Бану
+                          Банура
+                      Ахметбек
+                        Кенжебек
+                          Төлеухан
+                            Зәуре
+                            Роза
+                            Қайрат
+                              Гауһар
+                              Жасұлан
+                            Лариса
+                            Талғат
+                          Зәуреш
+                          Марат
+                    Дүйсенбі
+                    Бейсенбі
+                      Ахмеди
+                        Тәтибек
+                        Сотбек
+                        Сақып
+                      Ахметжан
+                        Төлеубике
+                        Рысбике
+                      Омар
+                        Мұрат
+                          Қайрат
+                          Сайран
+                          Бағлан
+                          Мейрам
+                        Нәзікүл
+                        Жұмақүл
+                        Марат
+                          Бекзат
+                          Салтанат
+                          Перизат
+                        Қуат
+                        Марал
+                          Ержан
+                          Мейіржан
+                          Мағжан
+                          Жанар
+                        Изакүл
+                        Кенжекүл
+                    Жүніс
+                      Нығмет
+                      Сейілхан
+                    Істілдә
+                      Қасен
+                      Бөде
+                      Әлекей
+                        Қажытай
+                        Тауық
+                        Бикайша
+                    Сағындық
+                      Нүркен | Нұрбала
+                  Байсынбай
+                    Үркімбай
+                      Түтқыш
+                      Қазанқап
+                      Амандық
+                        Қарабай
+                          Шәкен
+                          Қажымұрат
+                          Мәкен
+                          Шәкімұрат
+                          Марияш
+                          Ерболат
+                          Жаныбай
+                          Шойза
+                          Нұргүл
+                          Секен
+                          Бекен
+                    Босқынбай
+                      Мұстақай
+                        Нұрбек
+                        Нұргасерік
+                        Төлеубек
+                      Мұқаш
+                        Уәтой
+                        Тәжен
+                  Өтенбай
+                    Әбілхайыр | тұқым жоқ
+                    Әбілқас
+                      Балтабай
+                        Серәлі
+                        Жанар
+                        Серғазы
+                        Ерлан
+                        Дархан
+                        Болат
+                        Болатбек
+                        Анар
+                      Райхан
+                      Гүлдірайхан
+                      Рая
+                      Роза
+                  Доңбай
+                    Әбді
+                      Оқап
+                      Зәкәрия
+                      Шайза
+                    Әбілдә
+                      Әбілкәрім
+                      Мария
+                      Әбілғасен
+                      Әбілқалым
+                        Дауылбай
+                        Өміртай
+                  Бөкенбай
+                    Қонысбай
+                    Қыстаубай
+                Мамай
+                Қантар
+              Бөлеген
+                Беркінбай
+                  Айқынбай
+                    Батырбек
+                      Секербек
+                    Рысқұл
+                      Сыздықбек
+                      Сағындық
+                      Қапас
+                    Тұрсынбек
+                      Мақсұт
+                      Мақсура
+                      Құлия
+                    Момбек
+                      Торғай
+                      Жәкітай
+                      Көкітай
+                      Секен
+                    Мейрамбек
+                      Күлзада
+                      Күлхас
+                      Садуақас
+                      Сөлен
+                  Шалқынбай
+                    Сәтімбек
+                      Сағап
+                      Бексей
+                      Жақыпжан
+                      Әміржан
+                      Төлеухан
+                    Шәбләнбек
+                      Мөкенбай
+                      Кәсік
+                    Шәкірбек
+                      Тәңірберген
+                  Шүленбай | Үшқара деп атайды
+                    Жобалай
+                      Исатай
+                      Қасым
+                      Жәкен
+                      Төлеуқұл | тұқым жоқ
+                    Жұманбай
+                      Мұсатай
+                    Басымбек
+                      Әбеу
+                      Медеубек
+              *Шантай
+                Құбылтай
+                  Әлғазы
+                    Таңқы
+                  Белғазы
+                    Ахмет бай | 7 мың жылқы біткен
+                Табылтай
+                  Байғазы
+                    Стамбек
+                    Жазықбек
+                    Садықбек
+                  Жанғазы
+                    Нақыпбек | ерте қайтыс болған
+                    Жақыпбек
+                  Құлыншақ
+                *Жаманбала
+                  *Бертісбай
+                    Бәкір
+                      Жәміш
+                    Бектілеу
+                    Мұқан
+                      Аманбек
+                        Мейрам
+                          Мейірғалы
+                          Гауһар
+                          Гүлнара
+                          Сержан
+                          Дастан
+                          Рүстем
+                          Руслан
+                          Бекзат
+                        Светлана
+                        Тұңғышбай
+                          Ертарғын
+                    *Шайық
+                      *Фермебай
+                        *Есен
+                        Нұрлан
+                      Елубай
+                  Қыстаубек
+                    Сәуірбек
+                      Жұмабек
+                        Жұмаш
+                        Қанат
+                        Сағат
+                      Рекен
+                      Жұмаділ
+                  Жайлаубек
+                    Ақмолда
+                      Ахат
+                      Ескендір
+                      Аглимаш
+                    Адамбай
+                      Естай
+                      Күнімжан
+                      Қауаш
+                    Ідіяс
+                      Сейділәлі
+                      Міруәлі
+                      Ақандық
+                    Шайза
+                    Сарбас
+                      Дариға
+                    Рыстай
+                      Өмірбай
+                      Халықмейрам
+                      Медет
+                      Шолпан
+                      Айман
+                      Айнұр
+                  Илаубек
+                    Рахымбек
+                    Шоқан | тұқым жоқ
+                    Төлеу
+                    Төлеубек
+                      Сөкен
+                      Мөлен
+                      Аман
+              Жетібай
+              Сарғалдақ
+              Талдыбай
+                Тәуке
+                  Ауғанбай
+                    Қошай
+                    Дошай
+                    Итілік
+                    Әбіш
+                    Қатба
+                  Туғанбай
+                  Бейсенбай
+                Мәуке
+                Байке
+                Итіке
+            Марал
+            Сана би
+            Төлеген мырза
+          Айбас
+        Тоқпан
+        Құрманқұл
+    Жолым
+      Арық батыр
+      Бораншы
+      Есқара
+      Тоқай
+  Асан
+    Есенбақты
+      Ебескі | Құланшы
+      Қалдау
+    Дәулетбақты
+      Манас
+      Танас
+    Байбақты
+      Беті
+      Бекберлі
+`;
+
+function parse(text) {
+  let root = null; const stack = [];
+  for (const line of text.split("\n")) {
+    if (!line.trim()) continue;
+    const depth = Math.floor(line.match(/^ */)[0].length / 2);
+    let t = line.trim(); const hl = t.startsWith("*"); if (hl) t = t.slice(1).trim();
+    const [name, note] = t.split("|").map(s => s.trim());
+    const n = { name, note: note || "", hl, children: [] };
+    if (depth === 0) root = n; else stack[depth - 1].children.push(n);
+    stack[depth] = n; stack.length = depth + 1;
+  }
+  return root;
+}
+
+const root = d3.hierarchy(parse(RAW));
+let uid = 0;
+root.each(d => { d.id = ++uid; d.allChildren = d.children || null; d.total = d.descendants().length - 1; });
+
+const LEAVES = ["#3f7a3a", "#4f8f3f", "#6aa84f", "#5c9a3c", "#7bb35a"];
+const GEN_H = 115;
+const svg = d3.select("#tree");
+const defs = svg.append("defs");
+const glow = defs.append("filter").attr("id", "glow").attr("x", "-50%").attr("y", "-50%").attr("width", "200%").attr("height", "200%");
+glow.append("feGaussianBlur").attr("stdDeviation", 3.5).attr("result", "b");
+const fm = glow.append("feMerge"); fm.append("feMergeNode").attr("in", "b"); fm.append("feMergeNode").attr("in", "SourceGraphic");
+
+const g = svg.append("g");
+const gGround = g.append("g"), gLinks = g.append("g"), gNodes = g.append("g");
+const zoom = d3.zoom().scaleExtent([0.08, 2.5]).on("zoom", e => g.attr("transform", e.transform));
+svg.call(zoom).on("dblclick.zoom", null);
+
+// Roots and soil under Дадан
+[[-70, 46], [-38, 60], [0, 66], [36, 58], [74, 42], [-110, 30], [112, 28]].forEach(([dx, dy], i) => {
+  gGround.append("path").attr("class", "ground")
+    .attr("stroke-width", 9 - Math.abs(dx) / 18)
+    .attr("d", `M0,6 C${dx * 0.2},${dy * 0.5} ${dx * 0.7},${dy * 0.6} ${dx},${dy}`);
+});
+gGround.append("ellipse").attr("cx", 0).attr("cy", 14).attr("rx", 170).attr("ry", 10).attr("fill", "#1a130c").lower();
+
+const labelW = d => d.data.name.length * 7.2 + (d.allChildren && !d.children ? 34 : 0) + 22;
+const layout = d3.tree().nodeSize([10, GEN_H])
+  .separation((a, b) => Math.max(4, (labelW(a) + 8) / 10) + (a.parent === b.parent ? 0 : 2));
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const DUR = reduce ? 0 : 400;
+
+const P = d => [d.x, -d.y];   // vertical, growing up
+function branch(s, t) {
+  const [sx, sy] = s, [tx, ty] = t, my = (sy + ty) / 2;
+  return `M${sx},${sy} C${sx},${my + (sy - my) * 0.15} ${tx},${my + (sy - my) * 0.35} ${tx},${ty}`;
+}
+const thick = d => d.source.data.hl && d.target.data.hl ? 7 : Math.min(14, 1.6 + Math.sqrt(d.target.total + 1) * 1.05);
+
+function setOpen(d, open) { d.children = open ? d.allChildren : null; }
+function lineState() { root.each(d => setOpen(d, d.data.hl && !!d.allChildren)); }
+const isOpen = d => !!d.children;
+
+function update(src) {
+  layout(root);
+  const nodes = root.descendants(), links = root.links();
+  const s = src || root;
+  const s0 = [s.x0 ?? s.x, -(s.y0 ?? s.y)], s1 = P(s);
+  const t = svg.transition().duration(DUR);
+
+  const link = gLinks.selectAll("path.branch").data(links, d => d.target.id);
+  link.enter().append("path").attr("d", () => branch(s0, s0)).attr("stroke-width", 0.5)
+    .merge(link)
+    .attr("class", d => "branch" + (d.source.data.hl && d.target.data.hl ? " hl" : ""))
+    .attr("filter", d => d.source.data.hl && d.target.data.hl ? "url(#glow)" : null)
+    .transition(t).attr("d", d => branch(P(d.source), P(d.target))).attr("stroke-width", thick);
+  link.exit().transition(t).attr("d", () => branch(s1, s1)).attr("stroke-width", 0.5).remove();
+  gLinks.selectAll("path.branch.hl").raise();
+
+  const node = gNodes.selectAll("g.node").data(nodes, d => d.id);
+  const enter = node.enter().append("g")
+    .attr("transform", `translate(${s0[0]},${s0[1]})`)
+    .on("click", (e, d) => { if (d.allChildren) { setOpen(d, !isOpen(d)); update(d); } showCard(d); });
+  enter.filter(d => !d.allChildren).append("path").attr("class", "leaf")
+    .attr("d", "M0,2 C6,-4 6,-13 0,-20 C-6,-13 -6,-4 0,2Z")
+    .attr("fill", d => LEAVES[d.id % LEAVES.length])
+    .attr("transform", d => `rotate(${((d.id * 37) % 70) - 35})`);
+  enter.append("circle").attr("class", "knot");
+  const tx = enter.append("text").attr("dy", "0.32em");
+  tx.append("tspan").attr("class", "nm");
+  tx.append("tspan").attr("class", "note");
+  tx.append("tspan").attr("class", "more");
+  enter.append("title");
+
+  const all = enter.merge(node);
+  all.attr("class", d => "node" + (d.data.hl ? " hl" : "") + (d.allChildren && !isOpen(d) ? " closed" : ""));
+  all.select(".knot")
+    .attr("r", d => d.data.hl ? 7 : !d.allChildren ? 2.2 : isOpen(d) ? 4 : 6.5)
+    .attr("filter", d => d.data.hl ? "url(#glow)" : null);
+  all.select(".leaf").attr("transform", d => d.data.hl ? "scale(1.5)" : `rotate(${((d.id * 37) % 70) - 35})`);
+  all.select("text").attr("x", d => d.data.hl ? 14 : 10).attr("y", d => d.allChildren ? 0 : -6);
+  all.select(".nm").text(d => d.data.name);
+  all.select(".note").text(d => d.data.note && !isOpen(d) ? `  (${d.data.note})` : "");
+  all.select(".more").text(d => d.allChildren && !isOpen(d) ? `  +${d.total}` : "");
+  all.select("title").text(d => d.data.name + (d.data.note ? " — " + d.data.note : ""));
+  all.transition(t).attr("transform", d => `translate(${d.x},${-d.y})`);
+  node.exit().transition(t).attr("transform", `translate(${s1[0]},${s1[1]})`).remove();
+
+  root.each(d => { d.x0 = d.x; d.y0 = d.y; });
+}
+
+function fit() {
+  const nodes = root.descendants();
+  const el = svg.node(), W = el.clientWidth, H = el.clientHeight;
+  const xs = nodes.map(d => d.x), ys = nodes.map(d => -d.y);
+  const x0 = Math.min(...xs) - 40, x1 = Math.max(...xs) + 140, y0 = Math.min(...ys) - 50, y1 = 80;
+  const k = Math.max(0.08, Math.min(1.3, Math.min(W / (x1 - x0), H / (y1 - y0)) * 0.94));
+  const tr = d3.zoomIdentity.translate(W / 2 - k * (x0 + x1) / 2, H / 2 - k * (y0 + y1) / 2).scale(k);
+  svg.transition().duration(reduce ? 0 : 650).call(zoom.transform, tr);
+}
+
+function focusNode(d) {
+  d.ancestors().forEach(a => { if (a !== d) setOpen(a, true); });
+  update(d);
+  const el = svg.node(), k = Math.max(d3.zoomTransform(el).k, 0.9);
+  const tr = d3.zoomIdentity.translate(el.clientWidth / 2 - k * d.x, el.clientHeight / 2 + k * d.y).scale(k);
+  svg.transition().duration(reduce ? 0 : 650).call(zoom.transform, tr);
+  gNodes.selectAll("g.node").classed("flash", n => n === d);
+  setTimeout(() => gNodes.selectAll("g.node").classed("flash", false), 1600);
+  showCard(d);
+}
+
+function showCard(d) {
+  const path = d.ancestors().reverse();
+  const card = document.getElementById("card");
+  card.innerHTML = "";
+  const tag = document.createElement("span"); tag.className = "tag";
+  tag.textContent = `${path.length}-буын` + (d.data.hl ? " · ата жолы" : "");
+  const h = document.createElement("h2"); h.textContent = d.data.name;
+  card.append(tag, h);
+  if (d.data.note) { const n = document.createElement("div"); n.textContent = d.data.note; card.append(n); }
+  const p = document.createElement("div"); p.className = "path";
+  path.forEach((a, i) => {
+    const el = document.createElement(a.data.hl ? "b" : "span"); el.textContent = a.data.name;
+    p.append(el); if (i < path.length - 1) p.append(" → ");
+  });
+  card.append(p);
+  if (d.allChildren) { const k = document.createElement("div"); k.textContent = "Балалары: " + d.allChildren.map(c => c.data.name).join(", "); card.append(k); }
+}
+
+const line = root.descendants().filter(d => d.data.hl).sort((a, b) => a.depth - b.depth);
+const chain = document.getElementById("chain");
+line.forEach((d, i) => {
+  const b = document.createElement("button");
+  b.innerHTML = `<span class="gen">${i + 1}</span>`; b.append(d.data.name);
+  b.title = d.data.note || "";
+  b.onclick = () => focusNode(d);
+  chain.append(b);
+  if (i < line.length - 1) { const a = document.createElement("span"); a.className = "arr"; a.textContent = "→"; chain.append(a); }
+});
+
+const dl = document.getElementById("names");
+[...new Set(root.descendants().map(d => d.data.name))].sort((a, b) => a.localeCompare(b, "kk")).forEach(n => { const o = document.createElement("option"); o.value = n; dl.append(o); });
+const msg = document.getElementById("msg");
+let lastQ = "", hitIdx = 0;
+function doSearch() {
+  const q = document.getElementById("search").value.trim().toLowerCase();
+  if (!q) return;
+  const hits = root.descendants().filter(d => d.data.name.toLowerCase().includes(q));
+  if (!hits.length) { msg.textContent = "Табылмады. Жазылуын тексеріңіз."; return; }
+  hits.sort((a, b) => (b.data.hl - a.data.hl) || (a.depth - b.depth));
+  hitIdx = q === lastQ ? (hitIdx + 1) % hits.length : 0; lastQ = q;
+  msg.textContent = hits.length > 1 ? `${hitIdx + 1} / ${hits.length} (Enter — келесісі)` : "";
+  focusNode(hits[hitIdx]);
+}
+document.getElementById("search").addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
+document.getElementById("search").addEventListener("change", doSearch);
+
+document.getElementById("btnLine").onclick = () => { lineState(); update(root); setTimeout(fit, reduce ? 0 : 420); msg.textContent = ""; };
+document.getElementById("btnExpand").onclick = () => { root.each(d => setOpen(d, !!d.allChildren)); update(root); setTimeout(fit, reduce ? 0 : 420); };
+document.getElementById("btnFit").onclick = fit;
+
+lineState();
+update(root);
+fit();
+addEventListener("resize", fit);
+</script>
+</body>
+</html>
