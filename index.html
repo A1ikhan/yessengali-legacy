@@ -771,9 +771,18 @@ svg.call(zoom).on("dblclick.zoom", null);
 });
 gGround.append("ellipse").attr("cx", 0).attr("cy", 14).attr("rx", 170).attr("ry", 10).attr("fill", "#1a130c").lower();
 
-const labelW = d => d.data.name.length * 7.2 + (d.allChildren && !d.children ? 34 : 0) + 22;
+const measureCtx = document.createElement("canvas").getContext("2d");
+function textW(str, font) { measureCtx.font = font; return measureCtx.measureText(str).width; }
+// Real width of a node's label: name + note + "+N" counter, plus the offset from the node and a gap
+function labelW(d) {
+  const open = !!d.children;
+  let w = textW(d.data.name, d.data.hl ? '600 15px "PT Serif", Georgia, serif' : '12px "Noto Sans", Arial, sans-serif');
+  if (d.data.note && !open) w += textW(`  (${d.data.note})`, '400 10.5px "Noto Sans", Arial, sans-serif');
+  if (d.allChildren && !open) w += textW(`  +${d.total}`, '500 10.5px "Noto Sans", Arial, sans-serif');
+  return w + (d.data.hl ? 14 : 10) + 18;
+}
 const layout = d3.tree().nodeSize([10, GEN_H])
-  .separation((a, b) => Math.max(4, (labelW(a) + 8) / 10) + (a.parent === b.parent ? 0 : 2));
+  .separation((a, b) => Math.max(3, Math.max(labelW(a), labelW(b)) / 10) + (a.parent === b.parent ? 0 : 1.5));
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 const DUR = reduce ? 0 : 400;
 
@@ -911,6 +920,8 @@ lineState();
 update(root);
 fit();
 addEventListener("resize", fit);
+// Re-measure once the web fonts have loaded
+if (document.fonts) document.fonts.ready.then(() => { update(root); setTimeout(fit, reduce ? 0 : 420); });
 </script>
 </body>
 </html>
